@@ -34,6 +34,6 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Sound Detective'), findsOneWidget);
-    expect(find.text('I JUST HEARD A SOUND'), findsOneWidget);
+    expect(find.text('I JUST HEARD\nA SOUND'), findsOneWidget);
   });
 }

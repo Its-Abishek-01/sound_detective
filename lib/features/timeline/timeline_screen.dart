@@ -1,6 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../data/models/sound_event.dart';
+import '../../shared/theme/app_colors.dart';
+import '../../shared/theme/app_spacing.dart';
+import '../../shared/widgets/glass_container.dart';
+import '../../shared/widgets/glass_scaffold.dart';
 import 'timeline_controller.dart';
 import 'widgets/event_tile.dart';
 
@@ -11,51 +16,107 @@ class TimelineScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final eventsAsync = ref.watch(timelineProvider);
 
-    return Scaffold(
-      appBar: AppBar(title: const Text('Timeline')),
-      body: eventsAsync.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (err, _) => Center(child: Text('Could not load timeline: $err')),
-        data: (events) {
-          if (events.isEmpty) {
-            return const Center(child: Text('No activity recorded yet.'));
-          }
-          return ListView.builder(
-            itemCount: events.length,
-            itemBuilder: (context, index) {
-              final event = events[index];
-              final showDateHeader = index == 0 ||
-                  !_isSameDay(events[index - 1].timestamp, event.timestamp);
-              return Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  if (showDateHeader)
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
-                      child: Text(
-                        _formatDateHeader(event.timestamp),
-                        style: Theme.of(context).textTheme.labelLarge,
-                      ),
-                    ),
-                  EventTile(event: event),
-                  const Divider(height: 1),
-                ],
+    return GlassScaffold(
+      title: 'Timeline',
+      body: Padding(
+        padding: const EdgeInsets.only(top: kToolbarHeight + AppSpacing.sm),
+        child: eventsAsync.when(
+          loading: () => const Center(
+            child: CircularProgressIndicator(color: AppColors.blobCyan),
+          ),
+          error: (err, _) => Center(
+            child: Text(
+              'Could not load timeline: $err',
+              style: const TextStyle(color: AppColors.textSecondary),
+            ),
+          ),
+          data: (events) {
+            if (events.isEmpty) {
+              return const Center(
+                child: Text(
+                  'No activity recorded yet.',
+                  style: TextStyle(color: AppColors.textTertiary),
+                ),
               );
-            },
-          );
-        },
+            }
+            final groups = _groupByDay(events);
+            return ListView.builder(
+              padding: const EdgeInsets.all(AppSpacing.lg),
+              itemCount: groups.length,
+              itemBuilder: (context, index) {
+                final group = groups[index];
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: AppSpacing.lg),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.only(
+                          left: AppSpacing.xs,
+                          bottom: AppSpacing.sm,
+                        ),
+                        child: Text(
+                          group.label,
+                          style: const TextStyle(
+                            color: AppColors.textTertiary,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: 1,
+                          ),
+                        ),
+                      ),
+                      GlassContainer(
+                        padding: const EdgeInsets.symmetric(
+                          vertical: AppSpacing.sm,
+                        ),
+                        child: Column(
+                          children: [
+                            for (var i = 0; i < group.events.length; i++) ...[
+                              EventTile(event: group.events[i]),
+                              if (i != group.events.length - 1)
+                                const Divider(height: 1, indent: AppSpacing.md, endIndent: AppSpacing.md),
+                            ],
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            );
+          },
+        ),
       ),
     );
   }
 
+  List<_DayGroup> _groupByDay(List<SoundEvent> events) {
+    final now = DateTime.now();
+    final groups = <_DayGroup>[];
+    for (final event in events) {
+      final t = event.timestamp;
+      final label = _isSameDay(t, now)
+          ? 'Today'
+          : _isSameDay(t, now.subtract(const Duration(days: 1)))
+          ? 'Yesterday'
+          : '${t.year}-${t.month.toString().padLeft(2, '0')}-${t.day.toString().padLeft(2, '0')}';
+
+      if (groups.isNotEmpty && groups.last.label == label) {
+        groups.last.events.add(event);
+      } else {
+        groups.add(_DayGroup(label: label, events: [event]));
+      }
+    }
+    return groups;
+  }
+
   bool _isSameDay(DateTime a, DateTime b) =>
       a.year == b.year && a.month == b.month && a.day == b.day;
+}
 
-  String _formatDateHeader(DateTime time) {
-    final now = DateTime.now();
-    if (_isSameDay(time, now)) return 'Today';
-    final yesterday = now.subtract(const Duration(days: 1));
-    if (_isSameDay(time, yesterday)) return 'Yesterday';
-    return '${time.year}-${time.month.toString().padLeft(2, '0')}-${time.day.toString().padLeft(2, '0')}';
-  }
+class _DayGroup {
+  _DayGroup({required this.label, required this.events});
+
+  final String label;
+  final List<SoundEvent> events;
 }

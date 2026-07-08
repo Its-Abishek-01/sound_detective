@@ -18,6 +18,7 @@ enum SoundEventCategory {
   rotation,
   volume,
   dnd,
+  ringer,
   alarmClock,
   notificationPosted,
   notificationRemoved,
@@ -58,6 +59,8 @@ extension SoundEventCategoryWire on SoundEventCategory {
         return 'VOLUME';
       case SoundEventCategory.dnd:
         return 'DND';
+      case SoundEventCategory.ringer:
+        return 'RINGER';
       case SoundEventCategory.alarmClock:
         return 'ALARM_CLOCK';
       case SoundEventCategory.notificationPosted:

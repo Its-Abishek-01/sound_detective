@@ -37,4 +37,6 @@ class ControlMethods {
 
   static const String getRecentEvents = 'getRecentEvents';
   static const String reconstructForegroundApp = 'reconstructForegroundApp';
+  static const String consumeLaunchAction = 'consumeLaunchAction';
+  static const String getCurrentRingerMode = 'getCurrentRingerMode';
 }

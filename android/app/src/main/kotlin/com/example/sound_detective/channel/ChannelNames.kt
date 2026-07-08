@@ -26,4 +26,6 @@ object ControlMethod {
 
     const val GET_RECENT_EVENTS = "getRecentEvents"
     const val RECONSTRUCT_FOREGROUND_APP = "reconstructForegroundApp"
+    const val CONSUME_LAUNCH_ACTION = "consumeLaunchAction"
+    const val GET_CURRENT_RINGER_MODE = "getCurrentRingerMode"
 }

@@ -23,6 +23,7 @@ import com.example.sound_detective.collectors.tierA.BluetoothReceiver
 import com.example.sound_detective.collectors.tierA.DndReceiver
 import com.example.sound_detective.collectors.tierA.HeadphoneReceiver
 import com.example.sound_detective.collectors.tierA.NetworkCollector
+import com.example.sound_detective.collectors.tierA.RingerModeReceiver
 import com.example.sound_detective.collectors.tierA.RotationCollector
 import com.example.sound_detective.collectors.tierA.ScreenReceiver
 import com.example.sound_detective.collectors.tierA.UsbReceiver
@@ -68,6 +69,9 @@ class DetectiveForegroundService : Service() {
         isRunning = true
         ServiceStatusBus.publish("STARTED")
         registerTierACollectors()
+        // Idempotent (KEEP policy) — re-arms the resurrection watchdog
+        // on every legitimate start so it's always scheduled.
+        ServiceWatchdog.schedule(this)
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int = START_STICKY
@@ -90,6 +94,7 @@ class DetectiveForegroundService : Service() {
         registerBroadcast(DndReceiver(), DndReceiver.filter())
         registerBroadcast(AlarmClockReceiver(), AlarmClockReceiver.filter())
         registerBroadcast(VolumeReceiver(), VolumeReceiver.filter())
+        registerBroadcast(RingerModeReceiver(), RingerModeReceiver.filter())
         networkCallback = NetworkCollector.register(this)
         rotationObserver = RotationCollector.register(this)
     }
@@ -123,7 +128,7 @@ class DetectiveForegroundService : Service() {
         return NotificationCompat.Builder(this, CHANNEL_ID)
             .setContentTitle("Sound Detective")
             .setContentText("Listening in the background")
-            .setSmallIcon(R.mipmap.ic_launcher)
+            .setSmallIcon(R.drawable.ic_stat_sound_detective)
             .setPriority(NotificationCompat.PRIORITY_MIN)
             .setOngoing(true)
             .build()

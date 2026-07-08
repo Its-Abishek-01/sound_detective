@@ -14,6 +14,7 @@ class DeviceStateRule {
     bool? dndEnabled;
     String? audioStreamLabel;
     String? foregroundAppPackage;
+    String? ringerMode;
 
     for (final event in allWindowEvents) {
       switch (event.category) {
@@ -26,6 +27,9 @@ class DeviceStateRule {
           audioStreamLabel ??= event.metadata['streamType'] as String?;
         case SoundEventCategory.foregroundApp:
           foregroundAppPackage ??= event.packageName;
+        case SoundEventCategory.ringer:
+          // Events arrive newest-first; keep the most recent mode.
+          ringerMode ??= event.subtype;
         default:
           break;
       }
@@ -36,6 +40,7 @@ class DeviceStateRule {
       dndEnabled: dndEnabled,
       audioStreamLabel: audioStreamLabel,
       foregroundAppPackage: foregroundAppPackage,
+      ringerMode: ringerMode,
     );
   }
 }

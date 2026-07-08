@@ -9,6 +9,7 @@ SoundEvent _event({
   String? packageName,
   String sourceLabel = '',
   String subtype = '',
+  Map<String, dynamic> metadata = const {},
 }) {
   final base = now ?? DateTime.now();
   return SoundEvent(
@@ -21,6 +22,7 @@ SoundEvent _event({
     subtype: subtype,
     sourceLabel: sourceLabel,
     packageName: packageName,
+    metadata: metadata,
   );
 }
 
@@ -73,6 +75,114 @@ void main() {
     final result = ScoringEngine().analyze(events, now);
 
     expect(result.isUnknown, isTrue);
+  });
+
+  test('a silent notification loses to actively playing media', () {
+    final events = [
+      _event(
+        category: SoundEventCategory.notificationPosted,
+        secondsAgo: 1,
+        now: now,
+        packageName: 'com.slack',
+        sourceLabel: 'Slack',
+        metadata: {'audible': false},
+      ),
+      _event(
+        category: SoundEventCategory.mediaSession,
+        secondsAgo: 4,
+        now: now,
+        packageName: 'com.spotify.music',
+        sourceLabel: 'Spotify',
+        subtype: 'PLAYING',
+      ),
+    ];
+
+    final result = ScoringEngine().analyze(events, now);
+
+    expect(result.isUnknown, isFalse);
+    expect(result.sourceLabel, 'Spotify');
+  });
+
+  test('an audible notification outscores an identical silent one', () {
+    final events = [
+      _event(
+        category: SoundEventCategory.notificationPosted,
+        secondsAgo: 2,
+        now: now,
+        packageName: 'com.whatsapp',
+        sourceLabel: 'WhatsApp',
+        metadata: {'audible': true},
+      ),
+      _event(
+        category: SoundEventCategory.notificationPosted,
+        secondsAgo: 2,
+        now: now,
+        packageName: 'com.slack',
+        sourceLabel: 'Slack',
+        metadata: {'audible': false},
+      ),
+    ];
+
+    final result = ScoringEngine().analyze(events, now);
+
+    expect(result.isUnknown, isFalse);
+    expect(result.sourceLabel, 'WhatsApp');
+    expect(result.reasons, contains('Notification posted by WhatsApp'));
+  });
+
+  test('a lone silent notification is reported honestly in the reason', () {
+    final events = [
+      _event(
+        category: SoundEventCategory.notificationPosted,
+        secondsAgo: 1,
+        now: now,
+        packageName: 'com.slack',
+        sourceLabel: 'Slack',
+        metadata: {'audible': false},
+      ),
+      _event(
+        category: SoundEventCategory.mediaSession,
+        secondsAgo: 3,
+        now: now,
+        packageName: 'com.slack',
+        sourceLabel: 'Slack',
+        subtype: 'PLAYING',
+      ),
+    ];
+
+    final result = ScoringEngine().analyze(events, now);
+
+    expect(result.isUnknown, isFalse);
+    expect(
+      result.reasons,
+      contains('Silent notification posted by Slack (no sound expected)'),
+    );
+  });
+
+  test('ringer mode lands in the device-state snapshot, not as a candidate',
+      () {
+    final events = [
+      _event(
+        category: SoundEventCategory.notificationPosted,
+        secondsAgo: 1,
+        now: now,
+        packageName: 'com.whatsapp',
+        sourceLabel: 'WhatsApp',
+      ),
+      _event(
+        category: SoundEventCategory.ringer,
+        secondsAgo: 0,
+        now: now,
+        sourceLabel: 'Ringer mode',
+        subtype: 'VIBRATE',
+      ),
+    ];
+
+    final result = ScoringEngine().analyze(events, now);
+
+    expect(result.sourceLabel, 'WhatsApp');
+    expect(result.deviceState.ringerMode, 'VIBRATE');
+    expect(result.deviceState.wasMuted, isTrue);
   });
 
   test('a candidate with both notification and playing media compounds', () {

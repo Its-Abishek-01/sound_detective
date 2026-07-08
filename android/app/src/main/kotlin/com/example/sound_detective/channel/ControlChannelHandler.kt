@@ -7,6 +7,7 @@ import android.net.Uri
 import android.os.Build
 import android.provider.Settings
 import androidx.core.app.ActivityCompat
+import com.example.sound_detective.collectors.tierA.RingerModeReceiver
 import com.example.sound_detective.collectors.tierC.ForegroundAppTracker
 import com.example.sound_detective.core.EventRingBuffer
 import com.example.sound_detective.permissions.PermissionChecker
@@ -72,6 +73,16 @@ class ControlChannelHandler(private val activity: Activity) : MethodChannel.Meth
             ControlMethod.GET_RECENT_EVENTS -> {
                 val sinceMs = (call.argument<Number>("sinceMs"))?.toLong() ?: 0L
                 result.success(EventRingBuffer.eventsSince(sinceMs).map { it.toChannelMap() })
+            }
+
+            ControlMethod.CONSUME_LAUNCH_ACTION ->
+                result.success(com.example.sound_detective.MainActivity.consumeLaunchAction())
+
+            ControlMethod.GET_CURRENT_RINGER_MODE -> {
+                val audioManager =
+                    context.getSystemService(android.content.Context.AUDIO_SERVICE)
+                        as android.media.AudioManager
+                result.success(RingerModeReceiver.modeName(audioManager.ringerMode))
             }
 
             ControlMethod.RECONSTRUCT_FOREGROUND_APP -> {

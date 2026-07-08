@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
 
+import '../../shared/theme/app_colors.dart';
+import '../../shared/theme/app_spacing.dart';
+import '../../shared/widgets/glass_container.dart';
+
 class PermissionStepWidget extends StatelessWidget {
   const PermissionStepWidget({
     super.key,
@@ -25,49 +29,85 @@ class PermissionStepWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 32),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(icon, size: 72, color: Theme.of(context).colorScheme.primary),
-          const SizedBox(height: 24),
-          Text(
-            title,
-            style: Theme.of(context).textTheme.headlineSmall,
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 12),
-          Text(
-            description,
-            style: Theme.of(context).textTheme.bodyMedium,
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 32),
-          if (granted)
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const Icon(Icons.check_circle, color: Colors.green),
-                const SizedBox(width: 8),
-                Text(
-                  'Granted',
-                  style: Theme.of(
-                    context,
-                  ).textTheme.bodyLarge?.copyWith(color: Colors.green),
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+      child: GlassContainer(
+        strong: true,
+        padding: const EdgeInsets.all(AppSpacing.xl),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 72,
+              height: 72,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: AppColors.glassFillStrong,
+                border: Border.all(color: AppColors.glassBorder),
+              ),
+              child: Icon(icon, size: 32, color: AppColors.blobCyan),
+            ),
+            const SizedBox(height: AppSpacing.lg),
+            Text(
+              title,
+              style: const TextStyle(
+                color: AppColors.textPrimary,
+                fontSize: 20,
+                fontWeight: FontWeight.w600,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: AppSpacing.sm),
+            Text(
+              description,
+              style: const TextStyle(
+                color: AppColors.textSecondary,
+                fontSize: 14,
+                height: 1.4,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: AppSpacing.xl),
+            if (granted)
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(
+                    Icons.check_circle_rounded,
+                    color: AppColors.success,
+                    size: 20,
+                  ),
+                  const SizedBox(width: AppSpacing.sm),
+                  const Text(
+                    'Granted',
+                    style: TextStyle(
+                      color: AppColors.success,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 15,
+                    ),
+                  ),
+                ],
+              )
+            else
+              SizedBox(
+                width: double.infinity,
+                child: FilledButton(
+                  onPressed: onGrant,
+                  child: Text(grantButtonLabel),
                 ),
-              ],
-            )
-          else
-            FilledButton(onPressed: onGrant, child: Text(grantButtonLabel)),
-          const SizedBox(height: 16),
-          if (granted)
-            FilledButton.tonal(
-              onPressed: onContinue,
-              child: const Text('Continue'),
-            )
-          else if (optional)
-            TextButton(onPressed: onContinue, child: const Text('Skip')),
-        ],
+              ),
+            const SizedBox(height: AppSpacing.md),
+            if (granted)
+              SizedBox(
+                width: double.infinity,
+                child: FilledButton(
+                  onPressed: onContinue,
+                  child: const Text('Continue'),
+                ),
+              )
+            else if (optional)
+              TextButton(onPressed: onContinue, child: const Text('Skip')),
+          ],
+        ),
       ),
     );
   }

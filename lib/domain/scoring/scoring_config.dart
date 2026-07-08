@@ -42,10 +42,18 @@ class ScoringConfig {
     SoundEventCategory.rotation,
     SoundEventCategory.foregroundApp,
     SoundEventCategory.notificationRemoved,
+    SoundEventCategory.ringer,
   };
 
   static const double mediaPlayingBonus = 15;
   static const double foregroundAppMatchBonus = 20;
+
+  /// Multiplier applied to a notification event the native listener
+  /// judged as silent (low-importance channel, no channel sound, group
+  /// summary, ongoing/foreground-service post). Silent notifications
+  /// are visible but made no noise, so they should rarely win over a
+  /// signal that actually produced sound.
+  static const double silentNotificationFactor = 0.25;
 
   /// Sum of every rule's maximum possible contribution — the
   /// denominator confidence is normalized against. Kept fixed (not

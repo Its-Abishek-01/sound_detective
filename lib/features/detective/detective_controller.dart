@@ -1,9 +1,11 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../app/providers.dart';
+import '../../data/models/sound_event.dart';
 import '../../domain/scoring/models/analysis_result.dart';
 import '../../domain/scoring/scoring_config.dart';
 import '../../domain/scoring/scoring_engine.dart';
+import '../../platform/native_bridge.dart';
 
 final scoringEngineProvider = Provider<ScoringEngine>((ref) => ScoringEngine());
 
@@ -35,8 +37,35 @@ class DetectiveNotifier extends AsyncNotifier<AnalysisResult?> {
       final events = await repository.eventsSince(
         windowStart.millisecondsSinceEpoch,
       );
+
+      // The RINGER receiver only records mode *changes*, which usually
+      // predate the analysis window — so snapshot the current mode now
+      // and inject it as a synthetic context event. Not persisted; it
+      // exists only for this analysis run.
+      final ringerMode = await _currentRingerMode(bridge);
+      if (ringerMode != null) {
+        events.add(
+          SoundEvent(
+            id: 'synthetic-ringer-${now.millisecondsSinceEpoch}',
+            timestampMs: now.millisecondsSinceEpoch,
+            category: SoundEventCategory.ringer,
+            tier: SoundEventTier.a,
+            subtype: ringerMode,
+            sourceLabel: 'Ringer mode',
+          ),
+        );
+      }
+
       return engine.analyze(events, now);
     });
+  }
+
+  Future<String?> _currentRingerMode(NativeBridge bridge) async {
+    try {
+      return await bridge.getCurrentRingerMode();
+    } catch (_) {
+      return null; // Best-effort context; never fail the analysis.
+    }
   }
 
   void reset() => state = const AsyncData(null);

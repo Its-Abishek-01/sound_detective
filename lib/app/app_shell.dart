@@ -4,6 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../features/detective/detective_screen.dart';
 import '../features/onboarding/permission_setup_flow.dart';
 import '../features/onboarding/permission_status_provider.dart';
+import '../shared/theme/app_colors.dart';
+import '../shared/widgets/gradient_background.dart';
 import 'providers.dart';
 
 class AppShell extends ConsumerWidget {
@@ -18,11 +20,24 @@ class AppShell extends ConsumerWidget {
     final statusAsync = ref.watch(permissionStatusProvider);
 
     return statusAsync.when(
-      loading: () => const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
+      loading: () => Scaffold(
+        backgroundColor: Colors.transparent,
+        body: GradientBackground(
+          child: const Center(
+            child: CircularProgressIndicator(color: AppColors.blobCyan),
+          ),
+        ),
       ),
       error: (err, _) => Scaffold(
-        body: Center(child: Text('Startup error: $err')),
+        backgroundColor: Colors.transparent,
+        body: GradientBackground(
+          child: Center(
+            child: Text(
+              'Startup error: $err',
+              style: const TextStyle(color: AppColors.textSecondary),
+            ),
+          ),
+        ),
       ),
       data: (status) {
         if (!status.requiredGranted) {

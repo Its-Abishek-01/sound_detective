@@ -6,6 +6,9 @@ class ReasonTemplates {
   static String notificationPosted(String label) =>
       'Notification posted by $label';
 
+  static String silentNotificationPosted(String label) =>
+      'Silent notification posted by $label (no sound expected)';
+
   static String mediaPlaying(String label) => '$label is active in background';
 
   static String audioPlaybackActive(String label) =>

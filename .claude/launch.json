@@ -1,0 +1,19 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "flutter-preview-web",
+      "runtimeExecutable": "flutter",
+      "runtimeArgs": [
+        "run",
+        "-d",
+        "chrome",
+        "-t",
+        "lib/dev/preview_main.dart",
+        "--web-port",
+        "5959"
+      ],
+      "port": 5959
+    }
+  ]
+}

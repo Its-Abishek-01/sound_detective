@@ -9,12 +9,21 @@ class DeviceStateSnapshot {
     this.dndEnabled,
     this.audioStreamLabel,
     this.foregroundAppPackage,
+    this.ringerMode,
   });
 
   final bool? screenOn;
   final bool? dndEnabled;
   final String? audioStreamLabel;
   final String? foregroundAppPackage;
+
+  /// "NORMAL", "VIBRATE", or "SILENT" (wire values from the native
+  /// side). Null when unknown.
+  final String? ringerMode;
+
+  /// The phone couldn't have played a ringtone/notification sound —
+  /// what the user perceived was likely a vibration or another device.
+  bool get wasMuted => ringerMode == 'VIBRATE' || ringerMode == 'SILENT';
 }
 
 /// The outcome of running the scoring engine over an analysis window.

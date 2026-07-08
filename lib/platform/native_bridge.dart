@@ -97,6 +97,16 @@ class NativeBridge {
         .toList();
   }
 
+  /// Returns and clears the pending launch action ("analyze" when the
+  /// app was opened via the Quick Settings tile), or null. Pull-based:
+  /// call after first frame and on every app resume.
+  Future<String?> consumeLaunchAction() =>
+      _control.invokeMethod<String>(ControlMethods.consumeLaunchAction);
+
+  /// Current ringer mode: "NORMAL", "VIBRATE", or "SILENT".
+  Future<String?> getCurrentRingerMode() =>
+      _control.invokeMethod<String>(ControlMethods.getCurrentRingerMode);
+
   /// Triggers Tier C foreground-app reconstruction for the given
   /// lookback window; the resulting events also arrive on
   /// [eventStream] like any other collector.
