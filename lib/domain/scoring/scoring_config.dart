@@ -22,9 +22,12 @@ class ScoringConfig {
   static const Map<SoundEventCategory, double> categoryBaseWeight = {
     SoundEventCategory.notificationPosted: 50,
     SoundEventCategory.mediaSession: 45,
-    SoundEventCategory.audioPlaybackState: 45,
-    SoundEventCategory.audioFocus: 40,
     SoundEventCategory.usb: 40,
+    // Unattributed — can't name an app (see AudioFocusAndPlaybackCollector),
+    // so it's deliberately weighted below every named/verifiable signal.
+    // Still useful as a fallback when nothing else is around.
+    SoundEventCategory.audioPlaybackState: 22,
+    SoundEventCategory.audioFocus: 18,
     SoundEventCategory.bluetooth: 35,
     SoundEventCategory.headphones: 35,
     SoundEventCategory.alarmClock: 30,

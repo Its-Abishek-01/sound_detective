@@ -25,13 +25,25 @@ import com.example.sound_detective.model.SoundEventTier
  * publishes a generic, unattributed "something is playing audio"
  * candidate (system-level, no packageName) built from the
  * `AudioAttributes` usage type; [MediaSessionCollector] remains the
- * only source of app-attributed audio signals. The configs passed to
- * `onPlaybackConfigChanged` are documented as the currently *active*
- * set, so no extra activity filtering is needed or possible here. */
+ * only source of app-attributed audio signals.
+ *
+ * Bug discovered in production: dedup was originally keyed on
+ * `AudioPlaybackConfiguration.hashCode()`, which is NOT stable for an
+ * ongoing playback — it changes as the underlying player's internal
+ * state mutates (ducking/attenuation, mute toggles from other audio
+ * focus grants), even with no new playback actually starting. That
+ * made a long-running stream periodically look "brand new right now"
+ * to the scorer, which could win purely on freshness despite nothing
+ * having just happened (e.g. reporting "Alarm sound" from a stale
+ * background stream with no alarm actually ringing). Deduping on
+ * *usage-type presence* instead — did this usage type go from absent
+ * to present — is coarser (misses a second concurrent same-usage
+ * stream) but doesn't re-fire on state mutation of an already-known
+ * stream. */
 object AudioFocusAndPlaybackCollector {
     private var attached = false
     private var callback: AudioManager.AudioPlaybackCallback? = null
-    private val knownConfigs = mutableSetOf<Int>()
+    private val activeUsages = mutableSetOf<Int>()
 
     fun attach(context: Context) {
         if (attached) return
@@ -41,14 +53,15 @@ object AudioFocusAndPlaybackCollector {
         val handler = Handler(Looper.getMainLooper())
         val cb = object : AudioManager.AudioPlaybackCallback() {
             override fun onPlaybackConfigChanged(configs: MutableList<AudioPlaybackConfiguration>?) {
-                val current = configs.orEmpty()
-                val currentHashes = current.map { it.hashCode() }.toSet()
-                for (config in current) {
-                    if (config.hashCode() in knownConfigs) continue
-                    publish(config)
+                val currentUsages = configs.orEmpty()
+                    .mapNotNull { it.audioAttributes?.usage }
+                    .toSet()
+                for (usage in currentUsages) {
+                    if (usage in activeUsages) continue
+                    publish(usage)
                 }
-                knownConfigs.clear()
-                knownConfigs.addAll(currentHashes)
+                activeUsages.clear()
+                activeUsages.addAll(currentUsages)
             }
         }
         audioManager.registerAudioPlaybackCallback(cb, handler)
@@ -61,28 +74,31 @@ object AudioFocusAndPlaybackCollector {
         audioManager.unregisterAudioPlaybackCallback(cb)
         callback = null
         attached = false
-        knownConfigs.clear()
+        activeUsages.clear()
     }
 
-    private fun publish(config: AudioPlaybackConfiguration) {
-        val streamLabel = streamLabelFor(config.audioAttributes?.usage)
+    private fun publish(usage: Int) {
+        val streamLabel = streamLabelFor(usage)
         EventBus.publish(
             SoundEvent(
                 category = SoundEventCategory.AUDIO_PLAYBACK_STATE,
                 tier = SoundEventTier.B,
                 subtype = "PLAYING",
                 sourceLabel = streamLabel,
-                metadata = mapOf("streamType" to streamLabel),
+                metadata = mapOf("streamType" to streamLabel, "attributed" to false),
             ),
         )
     }
 
+    /** Deliberately hedged wording — this signal can never name an app
+     * (see class doc), so the label must not imply certainty about
+     * *which* app, only what kind of audio was detected. */
     private fun streamLabelFor(usage: Int?): String = when (usage) {
-        AudioAttributes.USAGE_MEDIA -> "Media playback"
-        AudioAttributes.USAGE_NOTIFICATION -> "Notification sound"
-        AudioAttributes.USAGE_ALARM -> "Alarm sound"
-        AudioAttributes.USAGE_NOTIFICATION_RINGTONE -> "Ringtone"
+        AudioAttributes.USAGE_MEDIA -> "Media-type audio"
+        AudioAttributes.USAGE_NOTIFICATION -> "Notification-type audio"
+        AudioAttributes.USAGE_ALARM -> "Alarm-type audio"
+        AudioAttributes.USAGE_NOTIFICATION_RINGTONE -> "Ringtone-type audio"
         AudioAttributes.USAGE_VOICE_COMMUNICATION -> "Voice call audio"
-        else -> "Audio playback"
+        else -> "Unattributed audio"
     }
 }

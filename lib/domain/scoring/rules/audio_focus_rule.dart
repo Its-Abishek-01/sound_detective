@@ -16,7 +16,10 @@ class AudioFocusRule implements ScoringRule {
     );
     if (audioEvents.isEmpty) return RuleContribution.none;
 
-    final label = audioEvents.first.sourceLabel;
-    return RuleContribution(0, ReasonTemplates.audioPlaybackActive(label));
+    final event = audioEvents.first;
+    final reason = event.metadata['attributed'] == false
+        ? ReasonTemplates.unattributedAudioPlaybackActive(event.sourceLabel)
+        : ReasonTemplates.audioPlaybackActive(event.sourceLabel);
+    return RuleContribution(0, reason);
   }
 }

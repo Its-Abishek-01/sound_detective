@@ -14,6 +14,12 @@ class ReasonTemplates {
   static String audioPlaybackActive(String label) =>
       '$label is playing audio right now';
 
+  /// Used when the audio signal can't be attributed to a specific app
+  /// (see AudioFocusAndPlaybackCollector's documented API limitation) —
+  /// phrased so it doesn't read as a confident claim about which app.
+  static String unattributedAudioPlaybackActive(String label) =>
+      '$label detected nearby (source app can\'t be confirmed)';
+
   static String foregroundAppMatch(String label) =>
       '$label was in the foreground';
 

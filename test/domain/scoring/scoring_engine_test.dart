@@ -55,6 +55,55 @@ void main() {
     expect(result.confidencePercent, greaterThan(50));
   });
 
+  test(
+      'unattributed alarm-type audio loses to a real named notification '
+      'even when fresher', () {
+    final events = [
+      _event(
+        category: SoundEventCategory.notificationPosted,
+        secondsAgo: 8,
+        now: now,
+        packageName: 'com.whatsapp',
+        sourceLabel: 'WhatsApp',
+        metadata: {'audible': true},
+      ),
+      _event(
+        category: SoundEventCategory.audioPlaybackState,
+        secondsAgo: 1,
+        now: now,
+        sourceLabel: 'Alarm-type audio',
+        subtype: 'PLAYING',
+        metadata: {'streamType': 'Alarm-type audio', 'attributed': false},
+      ),
+    ];
+
+    final result = ScoringEngine().analyze(events, now);
+
+    expect(result.isUnknown, isFalse);
+    expect(result.sourceLabel, 'WhatsApp');
+  });
+
+  test('a lone unattributed audio signal gets a hedged reason', () {
+    final events = [
+      _event(
+        category: SoundEventCategory.audioPlaybackState,
+        secondsAgo: 1,
+        now: now,
+        sourceLabel: 'Alarm-type audio',
+        subtype: 'PLAYING',
+        metadata: {'streamType': 'Alarm-type audio', 'attributed': false},
+      ),
+    ];
+
+    final result = ScoringEngine().analyze(events, now);
+
+    expect(result.isUnknown, isFalse);
+    expect(
+      result.reasons,
+      contains("Alarm-type audio detected nearby (source app can't be confirmed)"),
+    );
+  });
+
   test('an empty window returns Unknown', () {
     final result = ScoringEngine().analyze(const [], now);
 
