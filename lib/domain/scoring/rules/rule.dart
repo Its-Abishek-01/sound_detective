@@ -26,12 +26,13 @@ class CandidateContext {
 }
 
 class RuleContribution {
-  const RuleContribution(this.points, [this.reason]);
+  const RuleContribution(this.points, [this.reason, this.label]);
 
   static const RuleContribution none = RuleContribution(0);
 
   final double points;
   final String? reason;
+  final String? label;
 }
 
 abstract class ScoringRule {

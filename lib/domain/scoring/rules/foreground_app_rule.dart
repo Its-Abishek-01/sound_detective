@@ -24,6 +24,7 @@ class ForegroundAppRule implements ScoringRule {
     return RuleContribution(
       ScoringConfig.foregroundAppMatchBonus,
       ReasonTemplates.foregroundAppMatch(match.first.sourceLabel),
+      'Foreground app match',
     );
   }
 }

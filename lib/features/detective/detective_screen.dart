@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../app/providers.dart';
 import '../../domain/scoring/models/analysis_result.dart';
+import '../../domain/scoring/scoring_config.dart';
 import '../../platform/service_status.dart';
 import '../../shared/theme/app_colors.dart';
 import '../../shared/theme/app_spacing.dart';
@@ -105,6 +106,9 @@ class _DetectiveScreenState extends ConsumerState<DetectiveScreen>
                           onAskAgain: () => ref
                               .read(detectiveProvider.notifier)
                               .analyzeNow(),
+                          onFeedback: (feedback) => ref
+                              .read(detectiveProvider.notifier)
+                              .submitFeedback(feedback),
                         ),
                 ),
               ),
@@ -297,10 +301,15 @@ class _ErrorCard extends StatelessWidget {
 }
 
 class _ResultCard extends StatelessWidget {
-  const _ResultCard({required this.result, required this.onAskAgain});
+  const _ResultCard({
+    required this.result,
+    required this.onAskAgain,
+    required this.onFeedback,
+  });
 
   final AnalysisResult result;
   final VoidCallback onAskAgain;
+  final ValueChanged<DetectionFeedback> onFeedback;
 
   @override
   Widget build(BuildContext context) {
@@ -429,6 +438,12 @@ class _ResultCard extends StatelessWidget {
               ],
             ),
           ),
+          if (result.scoreBreakdown.isNotEmpty) ...[
+            const SizedBox(height: AppSpacing.lg),
+            const Divider(height: 1),
+            const SizedBox(height: AppSpacing.md),
+            _ScoreBreakdownList(items: result.scoreBreakdown),
+          ],
           if (result.reasons.isNotEmpty) ...[
             const SizedBox(height: AppSpacing.lg),
             const Divider(height: 1),
@@ -509,8 +524,205 @@ class _ResultCard extends StatelessWidget {
             const _MutedNote(),
           ],
           const SizedBox(height: AppSpacing.lg),
+          _FeedbackPrompt(
+            selected: result.feedback,
+            onSelected: onFeedback,
+          ),
+          const SizedBox(height: AppSpacing.lg),
           _AskAgainButton(onPressed: onAskAgain),
         ],
+      ),
+    );
+  }
+}
+
+class _ScoreBreakdownList extends StatelessWidget {
+  const _ScoreBreakdownList({required this.items});
+
+  final List<ScoreBreakdownItem> items;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        const Align(
+          alignment: Alignment.centerLeft,
+          child: Text(
+            'SCORE BREAKDOWN',
+            style: TextStyle(
+              color: AppColors.textTertiary,
+              fontSize: 12,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 1.5,
+            ),
+          ),
+        ),
+        const SizedBox(height: AppSpacing.sm),
+        for (final item in items)
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 5),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        item.label,
+                        style: const TextStyle(
+                          color: AppColors.textSecondary,
+                          fontSize: 14,
+                        ),
+                      ),
+                    ),
+                    Text(
+                      '+${_formatPoints(item.points)} pts',
+                      style: const TextStyle(
+                        color: AppColors.textPrimary,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 6),
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(AppSpacing.radiusPill),
+                  child: Container(
+                    height: 6,
+                    color: Colors.white.withValues(alpha: 0.08),
+                    alignment: Alignment.centerLeft,
+                    child: FractionallySizedBox(
+                      widthFactor: _barWidth(item.points),
+                      child: Container(color: AppColors.blobCyan),
+                    ),
+                  ),
+                ),
+                if (item.detail != null) ...[
+                  const SizedBox(height: 4),
+                  Text(
+                    item.detail!,
+                    style: const TextStyle(
+                      color: AppColors.textTertiary,
+                      fontSize: 12,
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+      ],
+    );
+  }
+
+  double _barWidth(double points) {
+    return (points / ScoringConfig.maxPossibleScore).clamp(0.04, 1.0).toDouble();
+  }
+
+  String _formatPoints(double points) {
+    return points == points.roundToDouble()
+        ? points.toStringAsFixed(0)
+        : points.toStringAsFixed(1);
+  }
+}
+
+class _FeedbackPrompt extends StatelessWidget {
+  const _FeedbackPrompt({
+    required this.selected,
+    required this.onSelected,
+  });
+
+  final DetectionFeedback? selected;
+  final ValueChanged<DetectionFeedback> onSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(AppSpacing.md),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.06),
+        borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.12)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          const Text(
+            'Was this right?',
+            style: TextStyle(
+              color: AppColors.textPrimary,
+              fontSize: 14,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          Row(
+            children: [
+              Expanded(
+                child: _FeedbackButton(
+                  icon: Icons.thumb_up_alt_rounded,
+                  label: 'Right',
+                  selected: selected == DetectionFeedback.correct,
+                  onPressed: () => onSelected(DetectionFeedback.correct),
+                ),
+              ),
+              const SizedBox(width: AppSpacing.sm),
+              Expanded(
+                child: _FeedbackButton(
+                  icon: Icons.thumb_down_alt_rounded,
+                  label: 'Wrong',
+                  selected: selected == DetectionFeedback.incorrect,
+                  onPressed: () => onSelected(DetectionFeedback.incorrect),
+                ),
+              ),
+            ],
+          ),
+          if (selected != null) ...[
+            const SizedBox(height: AppSpacing.sm),
+            Text(
+              selected!.label,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                color: AppColors.textTertiary,
+                fontSize: 12,
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _FeedbackButton extends StatelessWidget {
+  const _FeedbackButton({
+    required this.icon,
+    required this.label,
+    required this.selected,
+    required this.onPressed,
+  });
+
+  final IconData icon;
+  final String label;
+  final bool selected;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    final selectedColor = label == 'Wrong' ? AppColors.warning : AppColors.success;
+    final color = selected ? selectedColor : AppColors.textSecondary;
+    return OutlinedButton.icon(
+      onPressed: onPressed,
+      icon: Icon(icon, size: 18, color: color),
+      label: Text(label),
+      style: OutlinedButton.styleFrom(
+        foregroundColor: color,
+        side: BorderSide(
+          color: selected
+              ? selectedColor
+              : Colors.white.withValues(alpha: 0.18),
+        ),
       ),
     );
   }

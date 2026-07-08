@@ -1,5 +1,43 @@
 import '../../../data/models/sound_event.dart';
 
+class ScoreBreakdownItem {
+  const ScoreBreakdownItem({
+    required this.label,
+    required this.points,
+    this.detail,
+  });
+
+  final String label;
+  final double points;
+  final String? detail;
+}
+
+enum DetectionFeedback { correct, incorrect }
+
+extension DetectionFeedbackWire on DetectionFeedback {
+  String get wireName {
+    return switch (this) {
+      DetectionFeedback.correct => 'correct',
+      DetectionFeedback.incorrect => 'incorrect',
+    };
+  }
+
+  String get label {
+    return switch (this) {
+      DetectionFeedback.correct => 'Marked right',
+      DetectionFeedback.incorrect => 'Marked wrong',
+    };
+  }
+
+  static DetectionFeedback? fromWire(String? value) {
+    return switch (value) {
+      'correct' => DetectionFeedback.correct,
+      'incorrect' => DetectionFeedback.incorrect,
+      _ => null,
+    };
+  }
+}
+
 /// Device-state context attached to a result — never a candidate on its
 /// own, just descriptive metadata (matches the "Audio Stream / Screen
 /// Off / Foreground: No" style metadata rows in the mockups).
@@ -35,6 +73,8 @@ class AnalysisResult {
     this.packageName,
     this.confidence,
     this.reasons = const [],
+    this.scoreBreakdown = const [],
+    this.feedback,
     this.event,
     this.deviceState = const DeviceStateSnapshot(),
     this.nearbyContextEvents = const [],
@@ -61,6 +101,8 @@ class AnalysisResult {
   /// 0.0–[ScoringConfig.maxConfidence]; null when [isUnknown].
   final double? confidence;
   final List<String> reasons;
+  final List<ScoreBreakdownItem> scoreBreakdown;
+  final DetectionFeedback? feedback;
   final SoundEvent? event;
   final DeviceStateSnapshot deviceState;
 
@@ -69,4 +111,20 @@ class AnalysisResult {
   final List<SoundEvent> nearbyContextEvents;
 
   int get confidencePercent => ((confidence ?? 0) * 100).round();
+
+  AnalysisResult copyWith({DetectionFeedback? feedback}) {
+    return AnalysisResult(
+      isUnknown: isUnknown,
+      analyzedAt: analyzedAt,
+      sourceLabel: sourceLabel,
+      packageName: packageName,
+      confidence: confidence,
+      reasons: reasons,
+      scoreBreakdown: scoreBreakdown,
+      feedback: feedback ?? this.feedback,
+      event: event,
+      deviceState: deviceState,
+      nearbyContextEvents: nearbyContextEvents,
+    );
+  }
 }

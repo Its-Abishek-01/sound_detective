@@ -52,6 +52,8 @@ void main() {
     expect(result.sourceLabel, 'WhatsApp');
     expect(result.packageName, 'com.whatsapp');
     expect(result.reasons, contains('Notification posted by WhatsApp'));
+    expect(result.scoreBreakdown.first.label, 'Recent notification');
+    expect(result.scoreBreakdown.first.points, greaterThan(0));
     expect(result.confidencePercent, greaterThan(50));
   });
 
@@ -259,5 +261,12 @@ void main() {
     expect(result.sourceLabel, 'Spotify');
     expect(result.reasons, contains('Spotify is active in background'));
     expect(result.reasons, contains('Notification posted by Spotify'));
+    expect(
+      result.scoreBreakdown.map((item) => item.label),
+      containsAll([
+        'Recent notification',
+        'Playing media bonus',
+      ]),
+    );
   });
 }

@@ -20,6 +20,10 @@ class MediaSessionRule implements ScoringRule {
       (e) => e.subtype.toUpperCase() == 'PLAYING',
     );
     final points = isPlaying ? ScoringConfig.mediaPlayingBonus : 0.0;
-    return RuleContribution(points, ReasonTemplates.mediaPlaying(label));
+    return RuleContribution(
+      points,
+      ReasonTemplates.mediaPlaying(label),
+      'Playing media bonus',
+    );
   }
 }

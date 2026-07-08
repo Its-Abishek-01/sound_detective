@@ -57,7 +57,11 @@ class ScoringEngine {
 
       for (final rule in _rules) {
         final contribution = rule.evaluate(context);
-        candidate.addContribution(contribution.points, contribution.reason);
+        candidate.addContribution(
+          contribution.points,
+          contribution.reason,
+          label: contribution.label,
+        );
       }
 
       scored.add(candidate);
@@ -87,6 +91,9 @@ class ScoringEngine {
       );
     }
 
+    final scoreBreakdown = [...top.scoreBreakdown]
+      ..sort((a, b) => b.points.compareTo(a.points));
+
     return AnalysisResult(
       isUnknown: false,
       analyzedAt: analysisTime,
@@ -94,6 +101,7 @@ class ScoringEngine {
       packageName: top.packageName,
       confidence: confidence,
       reasons: top.reasons,
+      scoreBreakdown: scoreBreakdown,
       event: top.primaryEvent,
       deviceState: deviceState,
     );

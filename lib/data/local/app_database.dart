@@ -20,7 +20,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
   @override
-  int get schemaVersion => 2;
+  int get schemaVersion => 3;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -30,13 +30,27 @@ class AppDatabase extends _$AppDatabase {
             'CREATE INDEX IF NOT EXISTS idx_events_timestamp '
             'ON events(timestamp_ms);',
           );
+          await _createAnalysisFeedbackTable();
         },
         onUpgrade: (m, from, to) async {
           if (from < 2) {
             await m.createTable(analysisResults);
           }
+          if (from < 3) {
+            await _createAnalysisFeedbackTable();
+          }
         },
       );
+
+  Future<void> _createAnalysisFeedbackTable() {
+    return customStatement(
+      'CREATE TABLE IF NOT EXISTS analysis_feedback ('
+      'analyzed_at_ms INTEGER PRIMARY KEY NOT NULL, '
+      'feedback TEXT NOT NULL, '
+      'updated_at_ms INTEGER NOT NULL'
+      ');',
+    );
+  }
 }
 
 LazyDatabase _openConnection() {

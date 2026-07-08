@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../app/providers.dart';
@@ -59,16 +57,28 @@ class DetectiveNotifier extends AsyncNotifier<AnalysisResult?> {
       }
 
       final result = engine.analyze(events, now);
-      // Fire-and-forget: history is a convenience, never worth
-      // failing the analysis over.
-      unawaited(
-        ref
-            .read(historyRepositoryProvider)
-            .saveResult(result)
-            .catchError((_) {}),
-      );
+      try {
+        await ref.read(historyRepositoryProvider).saveResult(result);
+      } catch (_) {
+        // History is a convenience, never worth failing analysis over.
+      }
       return result;
     });
+  }
+
+  Future<void> submitFeedback(DetectionFeedback feedback) async {
+    final current = state.asData?.value;
+    if (current == null) return;
+
+    state = AsyncData(current.copyWith(feedback: feedback));
+    try {
+      await ref.read(historyRepositoryProvider).saveFeedback(
+            analyzedAt: current.analyzedAt,
+            feedback: feedback,
+          );
+    } catch (_) {
+      // Keep the UI responsive even if persistence is temporarily unavailable.
+    }
   }
 
   Future<String?> _currentRingerMode(NativeBridge bridge) async {

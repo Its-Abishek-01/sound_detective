@@ -1,6 +1,6 @@
 import 'dart:convert';
 
-import 'package:drift/drift.dart' show Value;
+import 'package:drift/drift.dart' show QueryRow, Value;
 
 import '../../domain/scoring/models/analysis_result.dart';
 import '../local/app_database.dart';
@@ -36,24 +36,41 @@ class HistoryRepository {
     );
   }
 
-  Stream<List<AnalysisResult>> watchHistory({int limit = 100}) {
-    return _db.analysisResultDao
-        .watchRecent(limit: limit)
-        .map((rows) => rows.map(_fromRow).toList());
+  Future<void> saveFeedback({
+    required DateTime analyzedAt,
+    required DetectionFeedback feedback,
+  }) {
+    return _db.analysisResultDao.upsertFeedback(
+      analyzedAtMs: analyzedAt.millisecondsSinceEpoch,
+      feedback: feedback.wireName,
+      updatedAtMs: DateTime.now().millisecondsSinceEpoch,
+    );
   }
 
-  AnalysisResult _fromRow(AnalysisResultRow row) {
+  Stream<List<AnalysisResult>> watchHistory({int limit = 100}) {
+    return _db.analysisResultDao
+        .watchRecentWithFeedback(limit: limit)
+        .map((rows) => rows.map(_fromJoinedRow).toList());
+  }
+
+  AnalysisResult _fromJoinedRow(QueryRow row) {
     return AnalysisResult(
-      isUnknown: row.isUnknown,
-      analyzedAt: DateTime.fromMillisecondsSinceEpoch(row.analyzedAtMs),
-      sourceLabel: row.sourceLabel,
-      packageName: row.packageName,
-      confidence: row.confidence,
-      reasons: (jsonDecode(row.reasonsJson) as List).cast<String>(),
+      isUnknown: row.read<bool>('is_unknown'),
+      analyzedAt: DateTime.fromMillisecondsSinceEpoch(
+        row.read<int>('analyzed_at_ms'),
+      ),
+      sourceLabel: row.readNullable<String>('source_label'),
+      packageName: row.readNullable<String>('package_name'),
+      confidence: row.readNullable<double>('confidence'),
+      reasons: (jsonDecode(row.read<String>('reasons_json')) as List)
+          .cast<String>(),
+      feedback: DetectionFeedbackWire.fromWire(
+        row.readNullable<String>('user_feedback'),
+      ),
       deviceState: DeviceStateSnapshot(
-        ringerMode: row.ringerMode,
-        screenOn: row.screenOn,
-        audioStreamLabel: row.audioStreamLabel,
+        ringerMode: row.readNullable<String>('ringer_mode'),
+        screenOn: row.readNullable<bool>('screen_on'),
+        audioStreamLabel: row.readNullable<String>('audio_stream_label'),
       ),
     );
   }

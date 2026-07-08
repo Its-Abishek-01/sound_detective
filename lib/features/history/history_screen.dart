@@ -126,6 +126,10 @@ class _HistoryCard extends StatelessWidget {
                 ),
               ),
           ],
+          if (result.feedback != null) ...[
+            const SizedBox(height: AppSpacing.sm),
+            _FeedbackBadge(feedback: result.feedback!),
+          ],
         ],
       ),
     );
@@ -149,5 +153,49 @@ class _HistoryCard extends StatelessWidget {
     if (isYesterday) return 'Yesterday, $clock';
     return '${time.year}-${time.month.toString().padLeft(2, '0')}-'
         '${time.day.toString().padLeft(2, '0')}, $clock';
+  }
+}
+
+class _FeedbackBadge extends StatelessWidget {
+  const _FeedbackBadge({required this.feedback});
+
+  final DetectionFeedback feedback;
+
+  @override
+  Widget build(BuildContext context) {
+    final isCorrect = feedback == DetectionFeedback.correct;
+    final color = isCorrect ? AppColors.success : AppColors.warning;
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.sm,
+        vertical: 4,
+      ),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(AppSpacing.radiusPill),
+        border: Border.all(color: color.withValues(alpha: 0.35)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            isCorrect
+                ? Icons.thumb_up_alt_rounded
+                : Icons.thumb_down_alt_rounded,
+            size: 14,
+            color: color,
+          ),
+          const SizedBox(width: AppSpacing.xs),
+          Text(
+            feedback.label,
+            style: TextStyle(
+              color: color,
+              fontSize: 12,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }

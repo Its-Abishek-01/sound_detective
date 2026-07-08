@@ -3,6 +3,7 @@ package com.example.sound_detective.service
 import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
+import android.app.PendingIntent
 import android.app.Service
 import android.content.BroadcastReceiver
 import android.content.Context
@@ -16,6 +17,7 @@ import android.os.IBinder
 import androidx.core.app.NotificationCompat
 import androidx.core.app.ServiceCompat
 import androidx.core.content.ContextCompat
+import com.example.sound_detective.MainActivity
 import com.example.sound_detective.R
 import com.example.sound_detective.collectors.tierA.AlarmClockReceiver
 import com.example.sound_detective.collectors.tierA.BatteryReceiver
@@ -125,10 +127,21 @@ class DetectiveForegroundService : Service() {
     }
 
     private fun buildNotification(): Notification {
+        val openAppIntent = Intent(this, MainActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
+        }
+        val openAppPendingIntent = PendingIntent.getActivity(
+            this,
+            0,
+            openAppIntent,
+            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
+        )
+
         return NotificationCompat.Builder(this, CHANNEL_ID)
             .setContentTitle("Sound Detective")
             .setContentText("Listening in the background")
             .setSmallIcon(R.drawable.ic_stat_sound_detective)
+            .setContentIntent(openAppPendingIntent)
             .setPriority(NotificationCompat.PRIORITY_MIN)
             .setOngoing(true)
             .build()
