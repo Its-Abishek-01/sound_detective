@@ -9,6 +9,7 @@ import '../../shared/theme/app_spacing.dart';
 import '../../shared/widgets/glass_container.dart';
 import '../../shared/widgets/glass_scaffold.dart';
 import '../../shared/widgets/gradient_cta_button.dart';
+import '../history/history_screen.dart';
 import '../timeline/timeline_screen.dart';
 import 'detective_controller.dart';
 import 'service_status_provider.dart';
@@ -66,6 +67,13 @@ class _DetectiveScreenState extends ConsumerState<DetectiveScreen>
     return GlassScaffold(
       title: 'Sound Detective',
       actions: [
+        IconButton(
+          icon: const Icon(Icons.fact_check_outlined),
+          tooltip: 'Past results',
+          onPressed: () => Navigator.of(context).push(
+            MaterialPageRoute(builder: (_) => const HistoryScreen()),
+          ),
+        ),
         IconButton(
           icon: const Icon(Icons.history_rounded),
           tooltip: 'Timeline',

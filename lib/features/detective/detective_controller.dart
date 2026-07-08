@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../app/providers.dart';
@@ -56,7 +58,16 @@ class DetectiveNotifier extends AsyncNotifier<AnalysisResult?> {
         );
       }
 
-      return engine.analyze(events, now);
+      final result = engine.analyze(events, now);
+      // Fire-and-forget: history is a convenience, never worth
+      // failing the analysis over.
+      unawaited(
+        ref
+            .read(historyRepositoryProvider)
+            .saveResult(result)
+            .catchError((_) {}),
+      );
+      return result;
     });
   }
 

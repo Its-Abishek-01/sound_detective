@@ -5,17 +5,22 @@ import 'package:drift/native.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 
+import 'daos/analysis_result_dao.dart';
 import 'daos/event_dao.dart';
+import 'tables/analysis_result_table.dart';
 import 'tables/event_table.dart';
 
 part 'app_database.g.dart';
 
-@DriftDatabase(tables: [Events], daos: [EventDao])
+@DriftDatabase(
+  tables: [Events, AnalysisResults],
+  daos: [EventDao, AnalysisResultDao],
+)
 class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
   @override
-  int get schemaVersion => 1;
+  int get schemaVersion => 2;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -25,6 +30,11 @@ class AppDatabase extends _$AppDatabase {
             'CREATE INDEX IF NOT EXISTS idx_events_timestamp '
             'ON events(timestamp_ms);',
           );
+        },
+        onUpgrade: (m, from, to) async {
+          if (from < 2) {
+            await m.createTable(analysisResults);
+          }
         },
       );
 }

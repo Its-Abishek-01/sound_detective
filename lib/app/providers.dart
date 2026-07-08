@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../data/local/app_database.dart';
 import '../data/repositories/event_repository.dart';
+import '../data/repositories/history_repository.dart';
 import '../platform/native_bridge.dart';
 
 final appDatabaseProvider = Provider<AppDatabase>((ref) {
@@ -16,6 +17,10 @@ final eventRepositoryProvider = Provider<EventRepository>((ref) {
   final repo = EventRepository(ref.watch(appDatabaseProvider));
   ref.onDispose(repo.dispose);
   return repo;
+});
+
+final historyRepositoryProvider = Provider<HistoryRepository>((ref) {
+  return HistoryRepository(ref.watch(appDatabaseProvider));
 });
 
 /// Subscribes to the native event stream once and fans events into the
