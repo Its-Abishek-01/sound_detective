@@ -2,6 +2,7 @@ import 'package:flutter/services.dart';
 
 import '../core/constants/channel_names.dart';
 import '../data/models/sound_event.dart';
+import '../domain/scoring/models/app_lead.dart';
 import 'service_status.dart';
 
 /// Thin wrapper around the platform channels. Nothing here holds
@@ -106,6 +107,24 @@ class NativeBridge {
   /// Current ringer mode: "NORMAL", "VIBRATE", or "SILENT".
   Future<String?> getCurrentRingerMode() =>
       _control.invokeMethod<String>(ControlMethods.getCurrentRingerMode);
+
+  /// Apps with any background activity (foreground/background
+  /// transitions, foreground-service start/stop) in the given window —
+  /// investigative leads only, called when analysis comes back
+  /// Unknown. Empty if Usage Access isn't granted.
+  Future<List<AppLead>> getRecentAppActivity(
+    int windowStartMs,
+    int windowEndMs,
+  ) async {
+    final raw = await _control.invokeMethod<List<dynamic>>(
+      ControlMethods.getRecentAppActivity,
+      {'windowStartMs': windowStartMs, 'windowEndMs': windowEndMs},
+    );
+    if (raw == null) return const [];
+    return raw
+        .map((e) => AppLead.fromChannelMap(e as Map<dynamic, dynamic>))
+        .toList();
+  }
 
   /// Triggers Tier C foreground-app reconstruction for the given
   /// lookback window; the resulting events also arrive on

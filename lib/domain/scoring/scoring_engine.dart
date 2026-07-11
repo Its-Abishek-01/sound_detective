@@ -83,7 +83,11 @@ class ScoringEngine {
       ScoringConfig.maxConfidence,
     );
 
-    if (confidence < ScoringConfig.minConfidenceFraction) {
+    final requiredConfidence = _isUnattributedAudio(top)
+        ? ScoringConfig.unattributedAudioMinConfidenceFraction
+        : ScoringConfig.minConfidenceFraction;
+
+    if (confidence < requiredConfidence) {
       return AnalysisResult.unknown(
         analyzedAt: analysisTime,
         deviceState: deviceState,
@@ -105,6 +109,13 @@ class ScoringEngine {
       event: top.primaryEvent,
       deviceState: deviceState,
     );
+  }
+
+  bool _isUnattributedAudio(ScoredCandidate candidate) {
+    final category = candidate.primaryEvent.category;
+    return candidate.packageName == null &&
+        (category == SoundEventCategory.audioPlaybackState ||
+            category == SoundEventCategory.audioFocus);
   }
 
   /// Groups events into candidates: events with a `packageName` are

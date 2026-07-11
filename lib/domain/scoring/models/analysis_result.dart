@@ -1,4 +1,5 @@
 import '../../../data/models/sound_event.dart';
+import 'app_lead.dart';
 
 class ScoreBreakdownItem {
   const ScoreBreakdownItem({
@@ -78,18 +79,21 @@ class AnalysisResult {
     this.event,
     this.deviceState = const DeviceStateSnapshot(),
     this.nearbyContextEvents = const [],
+    this.possibleLeads = const [],
   });
 
   factory AnalysisResult.unknown({
     required DateTime analyzedAt,
     DeviceStateSnapshot deviceState = const DeviceStateSnapshot(),
     List<SoundEvent> nearbyContextEvents = const [],
+    List<AppLead> possibleLeads = const [],
   }) {
     return AnalysisResult(
       isUnknown: true,
       analyzedAt: analyzedAt,
       deviceState: deviceState,
       nearbyContextEvents: nearbyContextEvents,
+      possibleLeads: possibleLeads,
     );
   }
 
@@ -110,9 +114,17 @@ class AnalysisResult {
   /// enough to be a confident answer.
   final List<SoundEvent> nearbyContextEvents;
 
+  /// Apps with *any* background activity nearby, offered only as
+  /// investigative leads on an unknown result — never scored,
+  /// never persisted. See [AppLead] and `RecentAppActivityTracker`.
+  final List<AppLead> possibleLeads;
+
   int get confidencePercent => ((confidence ?? 0) * 100).round();
 
-  AnalysisResult copyWith({DetectionFeedback? feedback}) {
+  AnalysisResult copyWith({
+    DetectionFeedback? feedback,
+    List<AppLead>? possibleLeads,
+  }) {
     return AnalysisResult(
       isUnknown: isUnknown,
       analyzedAt: analyzedAt,
@@ -125,6 +137,7 @@ class AnalysisResult {
       event: event,
       deviceState: deviceState,
       nearbyContextEvents: nearbyContextEvents,
+      possibleLeads: possibleLeads ?? this.possibleLeads,
     );
   }
 }

@@ -85,7 +85,9 @@ void main() {
     expect(result.sourceLabel, 'WhatsApp');
   });
 
-  test('a lone unattributed audio signal gets a hedged reason', () {
+  test(
+      'a lone unattributed audio signal defers to Unknown instead of a '
+      'confident-looking guess', () {
     final events = [
       _event(
         category: SoundEventCategory.audioPlaybackState,
@@ -99,11 +101,39 @@ void main() {
 
     final result = ScoringEngine().analyze(events, now);
 
+    // Its hard ceiling (~26%) sits below the dedicated unattributed-audio
+    // floor (30%) precisely so this never becomes a headline answer —
+    // it's still surfaced as raw context for the user to review.
+    expect(result.isUnknown, isTrue);
+    expect(result.nearbyContextEvents, contains(events.first));
+  });
+
+  test(
+      'unattributed audio paired with a real notification still reports '
+      'the named app, not Unknown', () {
+    final events = [
+      _event(
+        category: SoundEventCategory.notificationPosted,
+        secondsAgo: 1,
+        now: now,
+        packageName: 'com.spotify.music',
+        sourceLabel: 'Spotify',
+        metadata: {'audible': true},
+      ),
+      _event(
+        category: SoundEventCategory.audioPlaybackState,
+        secondsAgo: 1,
+        now: now,
+        sourceLabel: 'Alarm-type audio',
+        subtype: 'PLAYING',
+        metadata: {'streamType': 'Alarm-type audio', 'attributed': false},
+      ),
+    ];
+
+    final result = ScoringEngine().analyze(events, now);
+
     expect(result.isUnknown, isFalse);
-    expect(
-      result.reasons,
-      contains("Alarm-type audio detected nearby (source app can't be confirmed)"),
-    );
+    expect(result.sourceLabel, 'Spotify');
   });
 
   test('an empty window returns Unknown', () {

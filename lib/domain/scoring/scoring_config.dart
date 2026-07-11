@@ -12,6 +12,20 @@ class ScoringConfig {
   /// confident enough to report — the result becomes "Unknown" instead.
   static const double minConfidenceFraction = 0.20;
 
+  /// Confidence floor specifically for a top candidate that's
+  /// unattributed audio (audioPlaybackState/audioFocus with no
+  /// packageName — see AudioFocusAndPlaybackCollector's documented API
+  /// limitation: it can never name an app). None of the app-attribution
+  /// bonus rules (media session, foreground match) can apply without a
+  /// packageName, so a pure unattributed-audio candidate's hard ceiling
+  /// under the current rule set is ~26% — below this floor. In practice
+  /// that means it always defers to Unknown rather than presenting an
+  /// unverifiable "Alarm-type audio" guess as a confident headline
+  /// answer. Kept as a real, tunable threshold (not a hardcoded
+  /// exclusion) so it stays honest if future signals ever let an
+  /// unattributed candidate corroborate further.
+  static const double unattributedAudioMinConfidenceFraction = 0.30;
+
   /// Confidence is capped below 100% — certainty always leaves room for
   /// the possibility of an untracked cause.
   static const double maxConfidence = 0.97;

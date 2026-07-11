@@ -9,6 +9,7 @@ import android.provider.Settings
 import androidx.core.app.ActivityCompat
 import com.example.sound_detective.collectors.tierA.RingerModeReceiver
 import com.example.sound_detective.collectors.tierC.ForegroundAppTracker
+import com.example.sound_detective.collectors.tierC.RecentAppActivityTracker
 import com.example.sound_detective.core.EventRingBuffer
 import com.example.sound_detective.permissions.PermissionChecker
 import com.example.sound_detective.service.DetectiveForegroundService
@@ -91,6 +92,25 @@ class ControlChannelHandler(private val activity: Activity) : MethodChannel.Meth
                 scope.launch {
                     ForegroundAppTracker.reconstruct(context, start, end)
                     withContext(Dispatchers.Main) { result.success(null) }
+                }
+            }
+
+            ControlMethod.GET_RECENT_APP_ACTIVITY -> {
+                val start = (call.argument<Number>("windowStartMs"))?.toLong() ?: 0L
+                val end = (call.argument<Number>("windowEndMs"))?.toLong() ?: System.currentTimeMillis()
+                scope.launch {
+                    val leads = if (PermissionChecker.isUsageAccessGranted(context)) {
+                        RecentAppActivityTracker.query(context, start, end)
+                    } else {
+                        emptyList()
+                    }
+                    withContext(Dispatchers.Main) {
+                        result.success(
+                            leads.map {
+                                mapOf("packageName" to it.packageName, "appName" to it.appName)
+                            },
+                        )
+                    }
                 }
             }
 

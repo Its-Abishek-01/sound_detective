@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../app/providers.dart';
 import '../../data/models/sound_event.dart';
 import '../../domain/scoring/models/analysis_result.dart';
+import '../../domain/scoring/models/app_lead.dart';
 import '../../domain/scoring/scoring_config.dart';
 import '../../domain/scoring/scoring_engine.dart';
 import '../../platform/native_bridge.dart';
@@ -56,7 +57,14 @@ class DetectiveNotifier extends AsyncNotifier<AnalysisResult?> {
         );
       }
 
-      final result = engine.analyze(events, now);
+      var result = engine.analyze(events, now);
+
+      if (result.isUnknown) {
+        result = result.copyWith(
+          possibleLeads: await _possibleLeads(bridge, windowStart, now),
+        );
+      }
+
       try {
         await ref.read(historyRepositoryProvider).saveResult(result);
       } catch (_) {
@@ -86,6 +94,21 @@ class DetectiveNotifier extends AsyncNotifier<AnalysisResult?> {
       return await bridge.getCurrentRingerMode();
     } catch (_) {
       return null; // Best-effort context; never fail the analysis.
+    }
+  }
+
+  Future<List<AppLead>> _possibleLeads(
+    NativeBridge bridge,
+    DateTime windowStart,
+    DateTime now,
+  ) async {
+    try {
+      return await bridge.getRecentAppActivity(
+        windowStart.millisecondsSinceEpoch,
+        now.millisecondsSinceEpoch,
+      );
+    } catch (_) {
+      return const []; // Investigative extra; never fail the analysis.
     }
   }
 

@@ -372,6 +372,55 @@ class _ResultCard extends StatelessWidget {
                   ),
                 ),
             ],
+            if (result.possibleLeads.isNotEmpty) ...[
+              const SizedBox(height: AppSpacing.lg),
+              const Divider(height: 1),
+              const SizedBox(height: AppSpacing.md),
+              const Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  'Possible leads',
+                  style: TextStyle(
+                    color: AppColors.textTertiary,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    letterSpacing: 0.5,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 2),
+              const Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  'Not confirmed — apps active in the background nearby, '
+                  'worth checking yourself.',
+                  style: TextStyle(color: AppColors.textTertiary, fontSize: 12),
+                ),
+              ),
+              const SizedBox(height: AppSpacing.sm),
+              for (final lead in result.possibleLeads.take(5))
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 2),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(
+                        Icons.help_center_outlined,
+                        size: 14,
+                        color: AppColors.textTertiary,
+                      ),
+                      const SizedBox(width: AppSpacing.xs),
+                      Text(
+                        lead.appName,
+                        style: const TextStyle(
+                          color: AppColors.textSecondary,
+                          fontSize: 13,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+            ],
             const SizedBox(height: AppSpacing.lg),
             _AskAgainButton(onPressed: onAskAgain),
           ],
@@ -497,13 +546,19 @@ class _ResultCard extends StatelessWidget {
             label: 'Audio Stream',
             value: result.deviceState.audioStreamLabel ?? 'Unknown',
           ),
-          _MetadataRow(
-            label: 'Foreground',
-            value:
-                result.deviceState.foregroundAppPackage == result.packageName
-                ? 'Yes'
-                : 'No',
-          ),
+          // Only meaningful when the candidate is a real app — for an
+          // unattributed system-level candidate (e.g. "Alarm-type
+          // audio") there's no app to check foreground status for, and
+          // showing "No" implied a check that never happened.
+          if (result.packageName != null)
+            _MetadataRow(
+              label: 'Foreground',
+              value:
+                  result.deviceState.foregroundAppPackage ==
+                      result.packageName
+                  ? 'Yes'
+                  : 'No',
+            ),
           _MetadataRow(
             label: 'Device State',
             value: result.deviceState.screenOn == false
